@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: tracking-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: tracking_db
+      MYSQL_USER: tracking_user
+      MYSQL_PASSWORD: tracking_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - tracking-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis Cache
+  redis:
+    image: redis:7.0-alpine
+    container_name: tracking-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - tracking-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Spring Boot Application
+  app:
+    build: .
+    container_name: tracking-app
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tracking_db?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: tracking_user
+      SPRING_DATASOURCE_PASSWORD: tracking_pass
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      TRACK_17_API_KEY: ${TRACK_17_API_KEY}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tracking-network
+    volumes:
+      - app_logs:/app/logs
+
+volumes:
+  mysql_data:
+  redis_data:
+  app_logs:
+
+networks:
+  tracking-network:
+    driver: bridge
