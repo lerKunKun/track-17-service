@@ -1,0 +1,77 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: track-17-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/tracking_db?useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  jackson:
+    default-property-inclusion: non_null
+    deserialization:
+      fail-on-unknown-properties: false
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    password: ${SPRING_REDIS_PASSWORD:}
+    timeout: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    root: INFO
+    com.tracking: DEBUG
+  file:
+    name: logs/tracking-service.log
+
+tracking:
+  api:
+    base-url: ${TRACKING_API_BASE_URL:https://api.17track.net}
+    version: v2
+    key: ${TRACK_17_API_KEY:demo-api-key}
+    timeout: 30000
+    max-retries: 3
+  rate-limit:
+    register-per-day: ${TRACKING_REGISTER_LIMIT:5000}
+    query-per-day: ${TRACKING_QUERY_LIMIT:10000}
+    window-seconds: 86400
+  cache:
+    token-ttl: ${TRACKING_CACHE_TOKEN_TTL:3600}
+    status-ttl: ${TRACKING_CACHE_STATUS_TTL:300}
+    carrier-ttl: ${TRACKING_CACHE_CARRIER_TTL:86400}
+  retry:
+    max-attempts: ${TRACKING_RETRY_MAX_ATTEMPTS:5}
+    initial-delay: ${TRACKING_RETRY_INITIAL_DELAY:60000}
+    max-delay: ${TRACKING_RETRY_MAX_DELAY:3600000}
+    multiplier: ${TRACKING_RETRY_MULTIPLIER:2.0}
+  webhook:
+    enabled: ${WEBHOOK_ENABLED:true}
+    secret: ${WEBHOOK_SECRET:change-me}
+
+scheduling:
+  enabled: ${SCHEDULING_ENABLED:true}
+  sync-interval: ${SCHEDULING_SYNC_INTERVAL:300000}
